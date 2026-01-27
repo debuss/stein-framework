@@ -1,0 +1,31 @@
+# --- Stein Core ---
+vendor/
+composer.lock
+
+# --- Configuration & Secrets ---
+.env
+.env.local
+.env.*.local
+config/settings.local.php
+
+# --- Storage (Logs, Cache, Sessions) ---
+storage/logs/*.log
+!storage/logs/.gitkeep
+storage/cache/*
+!storage/cache/.gitkeep
+storage/sessions/*
+!storage/sessions/.gitkeep
+
+# --- Docker & Infrastructure ---
+.docker/
+docker/db_data/
+
+# --- IDEs & OS ---
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# --- Development Tools ---
+.phpunit.result.cache
+.phpunit.cache/

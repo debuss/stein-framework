@@ -1,0 +1,15 @@
+services:
+  app:
+    build: .
+    image: stein-app:latest
+    ports:
+      - "8080:80"
+      #- "443:443"
+      #- "443:443/udp"
+    volumes:
+      - .:/app
+    environment:
+      SERVER_NAME: :80 # Force FrankenPHP to listen HTTP on port 80
+      FRANKENPHP_CONFIG: worker ./public/worker.php
+    command: frankenphp php-server --watch --root ./public
+    tty: true
