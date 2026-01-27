@@ -79,29 +79,40 @@ Stein detects it and "inflects" the dependency into your class via setters.
 Just by implementing these interfaces, your controller is automatically equipped:
 
 ```php
-use Awareness\{ResponseFactoryAwareInterface,
-    StreamFactoryAwareInterface,
-    ResponseFactoryAwareTrait,
-    StreamFactoryAwareTrait}
-use Psr\Log\{LoggerAwareInterface, LoggerAwareTrait};
+namespace Application\Controller;
 
-class MyController extends Controller implements
+use Application\Builder\ResponseBuilder;
+use Awareness\{ResponseFactoryAwareInterface,
+    ResponseFactoryAwareTrait,
+    StreamFactoryAwareInterface,
+    StreamFactoryAwareTrait,
+    TemplateRendererAwareInterface,
+    TemplateRendererAwareTrait
+};
+use Psr\Log\{LoggerAwareInterface, LoggerAwareTrait};
+use Psr\Http\Server\RequestHandlerInterface;
+
+abstract class Controller implements
     LoggerAwareInterface,
     ResponseFactoryAwareInterface,
-    StreamFactoryAwareInterface
+    StreamFactoryAwareInterface,
+    TemplateRendererAwareInterface,
+    RequestHandlerInterface
 {
 
     // The Container will automatically call setLogger(), setResponseFactory(), etc.
     use LoggerAwareTrait,
         ResponseFactoryAwareTrait,
-        StreamFactoryAwareTrait;
+        StreamFactoryAwareTrait,
+        TemplateRendererAwareTrait;
 
-    public function handle(ServerRequestInterface $request): ResponseInterface 
+    protected function response(): ResponseBuilder
     {
-        $this->logger->info("Handling request!");
-        
-        // Use the injected factories via our fluent ResponseBuilder
-        return $this->response()->json(['status' => 'ok']);
+        return new ResponseBuilder(
+            $this->responseFactory,
+            $this->streamFactory,
+            $this->templateRenderer
+        );
     }
 }
 ```
@@ -117,7 +128,7 @@ Just follow the Stein "Assembly" pattern:
 
 1. **Define your Provider:** Create a Service Provider that registers your new service (e.g., Redis Cache).
 2. **Add an Inflector:** Tell the container that any class implementing `CacheAwareInterface` should receive the Cache service.
-3. **Implement & Use:** Simply add the interface to your controller.
+3. **Implement & Use:** Simply add the interface and trait to your class.
 
 **Example of adding a new "Part" to the monster:**
 
@@ -176,12 +187,13 @@ src/
 ```php
 composer create-project stein/stein monstruous-app
 cd monstruous-app
+cp .env.example .env
 ```
 
 2. **Spin it up with Docker:**
 
 ```shell
-docker-compose up -d
+docker-compose up --build
 # or
 composer start
 ```
@@ -205,7 +217,7 @@ class HomeController extends Controller
 }
 ```
 
-> You still can add routes manually if needed (`config/routes.php`):
+> You still can add routes manually if needed (in `config/routes.php`):
 > 
 > ```php
 > $collector->addRoute('GET', '/users/{id:\d+}', UserController::class);

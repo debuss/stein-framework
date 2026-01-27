@@ -1,6 +1,6 @@
 {
   "name": "stein/stein",
-    "description": "The PSR-assembled, FrankenPHP-ready, high-performance micro-framework.",
+  "description": "The PSR-assembled, FrankenPHP-ready, high-performance micro-framework.",
   "authors": [
     {
       "name": "Alexandre Debusschère",
