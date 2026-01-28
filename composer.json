@@ -1,6 +1,17 @@
 {
   "name": "stein/stein",
   "description": "The PSR-assembled, FrankenPHP-ready, high-performance micro-framework.",
+  "license": "MIT",
+  "keywords": [
+    "framework",
+    "micro-framework",
+    "psr",
+    "psr-7",
+    "psr-15",
+    "frankenphp",
+    "middleware",
+    "router"
+  ],
   "authors": [
     {
       "name": "Alexandre Debusschère",
