@@ -35,7 +35,8 @@
     "debuss-a/problem-details": "^1.0",
     "debuss-a/awareness": "^1.0",
     "mezzio/mezzio-template": "^3.0",
-    "mezzio/mezzio-platesrenderer": "^2.14"
+    "mezzio/mezzio-platesrenderer": "^2.14",
+    "debuss-a/fastroute-attribute-loader": "^1.0"
   },
   "require-dev": {
     "phpstan/phpstan": "^2.1",

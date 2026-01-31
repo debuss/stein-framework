@@ -2,7 +2,7 @@
 
 namespace Application\Controller;
 
-use Application\Routing\Attribute\Route;
+use FastRoute\Attribute\Route;
 use Application\UseCase\User\{GetAllUsersCommand, GetAllUsersHandler, GetUserByIdCommand, GetUserByIdHandler};
 use JsonException;
 use Psr\Http\Message\{ResponseInterface, ServerRequestInterface};
