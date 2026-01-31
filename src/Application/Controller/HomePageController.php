@@ -2,7 +2,7 @@
 
 namespace Application\Controller;
 
-use Application\Routing\Attribute\Route;
+use FastRoute\Attribute\Route;
 use Psr\Http\Message\{ResponseInterface, ServerRequestInterface};
 
 class HomePageController extends Controller
