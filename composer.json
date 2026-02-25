@@ -69,6 +69,7 @@
     ],
     "stop": "docker compose down",
     "shell": "docker compose exec app sh",
+    "logs": "docker compose logs app --follow",
     "test": "docker compose exec app vendor/bin/pest"
   },
   "config": {
