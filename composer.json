@@ -25,8 +25,6 @@
     "nyholm/psr7-server": "^1.1",
     "borschphp/requesthandler": "^2.2",
     "middlewares/cors": "^2.1",
-    "middlewares/fast-route": "^2.1",
-    "middlewares/request-handler": "^2.1",
     "middlewares/trailing-slash": "^2.1",
     "middlewares/payload": "^3.1",
     "middlewares/error-handler": "^3.1",
@@ -36,7 +34,7 @@
     "debuss-a/awareness": "^1.0",
     "mezzio/mezzio-template": "^3.0",
     "mezzio/mezzio-platesrenderer": "^2.14",
-    "debuss-a/fastroute-attribute-loader": "^1.0"
+    "debuss-a/fastroute-router": "^2.0"
   },
   "require-dev": {
     "phpstan/phpstan": "^2.1",

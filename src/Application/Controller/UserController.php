@@ -2,11 +2,12 @@
 
 namespace Application\Controller;
 
-use FastRoute\Attribute\Route;
 use Application\UseCase\User\{GetAllUsersCommand, GetAllUsersHandler, GetUserByIdCommand, GetUserByIdHandler};
 use JsonException;
 use Psr\Http\Message\{ResponseInterface, ServerRequestInterface};
+use Router\Attribute\{Get, Group};
 
+#[Group('/api/v1')]
 class UserController extends Controller
 {
 
@@ -18,7 +19,7 @@ class UserController extends Controller
     /**
      * @throws JsonException
      */
-    #[Route('/api/v1/users[/{id:\d+}]', methods: ['GET'])]
+    #[Get('/users[/{id:\d+}]')]
     public function handle(ServerRequestInterface $request): ResponseInterface
     {
         $id = $request->getAttribute('id');

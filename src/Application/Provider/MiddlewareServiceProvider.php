@@ -3,14 +3,16 @@
 namespace Application\Provider;
 
 use Borsch\Config\Config;
+use FastRoute\Dispatcher;
 use League\Container\ServiceProvider\AbstractServiceProvider;
 use Middlewares\ErrorFormatter\{HtmlFormatter,
     JsonFormatter,
     PlainFormatter};
-use Middlewares\{Cors, ErrorHandler, FastRoute, RequestHandler};
+use Middlewares\{Cors, ErrorHandler};
 use Neomerx\Cors\Analyzer;
 use Neomerx\Cors\Strategies\Settings;
 use Psr\Http\Message\ResponseFactoryInterface;
+use Router\{FastRouteDispatcher, FastRouteRouter, ImplicitHead, ImplicitOption, MethodNotAllowed, NotFound};
 use function FastRoute\cachedDispatcher;
 use function FastRoute\simpleDispatcher;
 
@@ -22,8 +24,13 @@ class MiddlewareServiceProvider extends AbstractServiceProvider
         return in_array($id, [
             Cors::class,
             ErrorHandler::class,
-            FastRoute::class,
-            RequestHandler::class
+            Dispatcher::class,
+            FastRouteRouter::class,
+            FastRouteDispatcher::class,
+            ImplicitHead::class,
+            ImplicitOption::class,
+            MethodNotAllowed::class,
+            NotFound::class
         ]);
     }
 
@@ -60,28 +67,67 @@ class MiddlewareServiceProvider extends AbstractServiceProvider
         $this
             ->getContainer()
             ->add(
-                FastRoute::class,
-                function (Config $config): FastRoute {
+                Dispatcher::class,
+                function (Config $config): Dispatcher {
                     $callback = (require_once config_path('routes.php'));
 
-                    $dispatcher = $config->getOrDefault('APP_ENV', 'development') == 'production'
+                    return $config->getOrDefault('APP_ENV', 'development') == 'production'
                         ? cachedDispatcher($callback, [
                             'cacheFile' => cache_path('route.cache.php')
                         ])
                         : simpleDispatcher($callback);
-
-                    return new FastRoute(
-                        $dispatcher,
-                        $this->getContainer()->get(ResponseFactoryInterface::class)
-                    );
                 }
             )->addArgument($this->getContainer()->get(Config::class));
 
         $this
             ->getContainer()
             ->add(
-                RequestHandler::class,
-                fn(): RequestHandler => (new RequestHandler($this->getContainer()))
+                FastRouteRouter::class,
+                fn(Dispatcher $dispatcher): FastRouteRouter => new FastRouteRouter($dispatcher)
+            )->addArgument($this->getContainer()->get(Dispatcher::class));
+
+        $this
+            ->getContainer()
+            ->add(
+                FastRouteDispatcher::class,
+                fn(): FastRouteDispatcher => (new FastRouteDispatcher($this->getContainer()))
+            );
+
+        $this
+            ->getContainer()
+            ->add(
+                ImplicitHead::class,
+                fn(): ImplicitHead => new ImplicitHead(
+                    $this->getContainer()->get(Dispatcher::class),
+                    $this->getContainer()->get(ResponseFactoryInterface::class)
+                )
+            );
+
+        $this
+            ->getContainer()
+            ->add(
+                ImplicitOption::class,
+                fn(): ImplicitOption => new ImplicitOption(
+                    $this->getContainer()->get(ResponseFactoryInterface::class)
+                )
+            );
+
+        $this
+            ->getContainer()
+            ->add(
+                MethodNotAllowed::class,
+                fn(): MethodNotAllowed => new MethodNotAllowed(
+                    $this->getContainer()->get(ResponseFactoryInterface::class)
+                )
+            );
+
+        $this
+            ->getContainer()
+            ->add(
+                NotFound::class,
+                fn(): NotFound => new NotFound(
+                    $this->getContainer()->get(ResponseFactoryInterface::class)->createResponse(404)
+                )
             );
     }
 }
