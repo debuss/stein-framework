@@ -2,13 +2,13 @@
 
 namespace Application\Controller;
 
-use FastRoute\Attribute\Route;
 use Psr\Http\Message\{ResponseInterface, ServerRequestInterface};
+use Router\Attribute\Get;
 
 class HomePageController extends Controller
 {
 
-    #[Route('/', methods: ['GET'])]
+    #[Get('/')]
     public function handle(ServerRequestInterface $request): ResponseInterface
     {
         $this->logger->info('Displaying home page');

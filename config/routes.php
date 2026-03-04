@@ -1,7 +1,7 @@
 <?php
 
-use FastRoute\Attribute\AttributeRouteLoader;
 use FastRoute\RouteCollector;
+use Router\AttributeRouteLoader;
 
 return static function (RouteCollector $collector): void {
 
