@@ -2,20 +2,13 @@
 
 namespace Domain\User\Exception;
 
-use ProblemDetails\{ProblemDetails, ProblemDetailsException};
+use InvalidArgumentException;
 
-class UserIdInvalidException extends ProblemDetailsException
+class UserIdInvalidException extends InvalidArgumentException
 {
 
     public static function create(int $id) : self
     {
-        $problem_details = new ProblemDetails(
-            'error://user-id-invalid',
-            'User ID must be a positive integer or null.',
-            401,
-            "A user with an ID $id is not possible."
-        );
-
-        return new self($problem_details);
+        return new self("A user with an ID $id is not possible.", 422);
     }
 }

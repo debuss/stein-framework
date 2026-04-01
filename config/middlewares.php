@@ -1,25 +1,19 @@
 <?php
 
-use Borsch\RequestHandler\RequestHandlerInterface;
-use Middlewares\{Cors, ErrorHandler, JsonPayload, TrailingSlash};
-use ProblemDetails\ProblemDetailsMiddleware;
+use Middlewares\ErrorHandler;
+use League\Route\{Router, RouterInterface};
 use Psr\Container\ContainerInterface;
-use Router\{FastRouteDispatcher, FastRouteRouter, ImplicitHead, ImplicitOption, MethodNotAllowed, NotFound};
 
-return static function (RequestHandlerInterface $handler, ContainerInterface $container): void {
+/**
+ * Define middlewares that must be run on the router for every matched route.
+ *
+ * @see https://route.thephpleague.com/unstable/middleware
+ */
+return static function (RouterInterface $router, ContainerInterface $container): void {
 
-    $handler->middlewares([
-        $container->get(Cors::class),
-        $container->get(ErrorHandler::class),
-        $container->get(ProblemDetailsMiddleware::class),
-        $container->get(TrailingSlash::class),
-        $container->get(FastRouteRouter::class),
-        $container->get(ImplicitHead::class),
-        $container->get(ImplicitOption::class),
-        $container->get(MethodNotAllowed::class),
-        $container->get(JsonPayload::class),
-        $container->get(FastRouteDispatcher::class),
-        $container->get(NotFound::class)
+    /** @var Router $router */
+    $router->lazyMiddlewares([
+        ErrorHandler::class
     ]);
 
 };

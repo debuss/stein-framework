@@ -24,7 +24,7 @@ readonly class UserName implements JsonSerializable
         return $this->name;
     }
 
-    public function jsonSerialize(): mixed
+    public function jsonSerialize(): string
     {
         return $this->name;
     }

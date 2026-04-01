@@ -5,235 +5,267 @@
 **Stein** is a "Modern Prometheus" experiment in PHP. Instead of reinventing the wheel, Stein stitches together
 the most powerful, industry-standard PSR components into a cohesive, lightning-fast organism.
 
-Born to run in **FrankenPHP’s Worker Mode**, Stein is lean, mean, and obsessed with clean architecture (DDD).
+Born to run in **FrankenPHP's Worker Mode**, Stein is lean, mean, and obsessed with clean architecture (DDD).
 
 ## 🧪 The "Parts" (Stitched with ❤️)
 
-Stein doesn't hide its seams. It’s proud to be built on the shoulders of giants:
+Stein doesn't hide its seams. It's proud to be built on the shoulders of giants:
 
-- **Container:** `league/container` (with auto-wiring & inflectors).
-- **HTTP Factory:** `nyholm/psr7` (ultra-fast PSR-7/17).
-- **Routing:** `fast-route` (via `middlewares/fast-route`).
-- **Logging:** `monolog` (pre-configured for Docker/K8s).
+- **Container:** `league/container` (with auto-wiring & `afterResolve` hooks).
+- **Routing:** `league/route` (with route caching for production).
+- **HTTP Messages:** `laminas/laminas-diactoros` (PSR-7/17 factories & responses).
+- **Middleware:** `middlewares/error-handler`, `middlewares/payload`.
+- **Logging:** `monolog` (pre-configured for Docker/K8s, JSON output to stderr).
+- **Templating:** `mezzio/mezzio-platesrenderer` (swappable via Mezzio Template bridge).
+- **Configuration:** `borschphp/config` (INI-based `.env` aggregation).
+- **Awareness:** `debuss-a/awareness` (PSR-aware interfaces & traits for clean DI).
 - **Server:** Native **FrankenPHP** worker loop integration.
 
 ## 🚀 Key Concepts
 
-#### 1. Attribute-Based Routing
+#### 1. Route Configuration
 
-Forget messy configuration files. Stein uses its own `AttributeRouteLoader` to scan your controllers. 
-Just drop an attribute on your class, and Stein’s heart starts beating.
+Routes are defined in `config/routes.php` as a simple closure receiving the router and container.
+They support grouping, per-group middleware, and FastRoute-style path patterns.
 
 ```php
-class UserController extends Controller
-{
-    
-    #[Route('/api/v1/users[/{id:\d+}]', method: ['GET'])]
-    public function handle(ServerRequestInterface $request): ResponseInterface
-    {
-        // Your logic here
-    }
-}
+// config/routes.php
+return static function (RouterInterface $router, ContainerInterface $container): void {
+
+    $router->map('GET', '/', HomePageController::class);
+
+    $router->group('/api/v1', function (RouteGroup $group) {
+        $group->map('GET', '/users[/{id:\d+}]', UserController::class);
+    })->lazyMiddlewares([JsonPayload::class]);
+
+};
 ```
+
+In production (`APP_ENV=production`), routes are automatically cached to a file via `league/route`'s
+`CachedRouter`, giving you zero-overhead routing after the first request.
 
 #### 2. The Worker-First Mindset
 
-Stein is built for 2026. It stays in memory between requests thanks to FrankenPHP. Our `worker.php` handles the
-loop, and keeps your app screamingly fast by avoiding the "boot-everything-every-time"
-tax of traditional FPM.
+Stein is built for 2026. It stays in memory between requests thanks to FrankenPHP. `worker.php` handles
+the request loop and boots the container **once**, keeping your app screamingly fast by avoiding the
+"boot-everything-every-time" tax of traditional FPM.
+
+A configurable restart threshold prevents memory creep:
+
+```ini
+; .env
+FRANKENPHP_NB_REQUEST_TO_RESTART=1000
+```
 
 #### 3. Dependency Injection via Awareness
 
-We hate bloated constructors. Stein uses Inflectors. If your controller implements `LoggerAwareInterface`, the
-container automatically breathes life (and a Logger) into it. No manual wiring needed.  
-The same goes for other PSR interfaces like `ResponseFactoryInterface`, `StreamFactoryInterface`, and more.
+Stein uses `league/container`'s `afterResolve` hooks to automatically inject PSR services into any class
+that implements the corresponding `AwareInterface` — with **zero constructor pollution**.
 
-#### 4. The ResponseBuilder (The DX Special)
+If your class implements `LoggerAwareInterface`, the container calls `setLogger()` automatically after
+resolving it. The same pattern works for `TemplateRendererAwareInterface`, `ResponseFactoryAwareInterface`,
+and any custom aware interface you define.
 
-Standard PSR-7 can be a bit... talkative. Stein provides a fluent `ResponseBuilder` so you can write:
+#### 4. DDD Project Structure
 
-```php
-return $this->response()
-    ->status(201)
-    ->json(['message' => 'It is alive!']);
+Stein scaffolds a clean Domain-Driven Design layout out of the box:
+
+```text
+src/
+├── Application    # Controllers, Service Providers, Use Cases
+├── Domain         # Entities, Repository Interfaces, Value Objects, Domain Exceptions
+└── Infrastructure # Repository implementations, third-party adapters
 ```
 
-## 💉 Smart Dependency Injection (The Inflector Pattern)
+## 💉 Smart Dependency Injection (The Awareness Pattern)
 
-Stein leverages `league/container` Inflectors to keep your code clean and decoupled. In many frameworks,
-you end up bloating your constructor with logging, factory, or caching services.
+If your class needs a PSR service, implement the corresponding `AwareInterface` and Stein's container
+injects it automatically after resolution — no manual wiring, no constructor bloat.
 
-**Not here.**
-
-If your class needs a specific PSR implementation, you simply implement the corresponding `AwareInterface`.
-Stein detects it and "inflects" the dependency into your class via setters.
-
-**Why this is better:**
-
-- **Clean Constructors:** Your `__construct` only contains what's strictly necessary for your business logic (like Repositories).
-- **PSR-Ready:** Easily swap any implementation (Monolog for logging, Nyholm for PSR-17 factories, Redis for PSR-6 caching).
-- **Automatic Wiring:** No need to manually define how to inject the logger or factory into every single controller.
-
-**Example:**
-
-Just by implementing these interfaces, your controller is automatically equipped:
+**The base `Controller` class demonstrates this:**
 
 ```php
 namespace Application\Controller;
 
-use Application\Builder\ResponseBuilder;
-use Awareness\{ResponseFactoryAwareInterface,
-    ResponseFactoryAwareTrait,
-    StreamFactoryAwareInterface,
-    StreamFactoryAwareTrait,
-    TemplateRendererAwareInterface,
-    TemplateRendererAwareTrait
-};
+use Awareness\{TemplateRendererAwareInterface, TemplateRendererAwareTrait};
 use Psr\Log\{LoggerAwareInterface, LoggerAwareTrait};
 use Psr\Http\Server\RequestHandlerInterface;
 
 abstract class Controller implements
     LoggerAwareInterface,
-    ResponseFactoryAwareInterface,
-    StreamFactoryAwareInterface,
     TemplateRendererAwareInterface,
     RequestHandlerInterface
 {
-
-    // The Container will automatically call setLogger(), setResponseFactory(), etc.
+    // The container calls setLogger() and setTemplateRenderer() automatically.
     use LoggerAwareTrait,
-        ResponseFactoryAwareTrait,
-        StreamFactoryAwareTrait,
         TemplateRendererAwareTrait;
+}
+```
 
-    protected function response(): ResponseBuilder
+**A controller using those injected services:**
+
+```php
+class HomePageController extends Controller
+{
+    public function handle(ServerRequestInterface $request): ResponseInterface
     {
-        return new ResponseBuilder(
-            $this->responseFactory,
-            $this->streamFactory,
-            $this->templateRenderer
-        );
+        $this->logger->info('Displaying home page');
+
+        return new HtmlResponse($this->templateRenderer->render('home'));
     }
 }
 ```
 
-An `AwareInterface` + `AwareTrait` combo exists for most common PSR interfaces.
+**Why this is better than constructor injection for cross-cutting concerns:**
+
+- **Clean Constructors:** Your `__construct` only contains what's strictly necessary for your business logic (like Repositories).
+- **PSR-Ready:** Easily swap any implementation (Monolog → another PSR-3 logger, Plates → Twig).
+- **Automatic Wiring:** No need to manually define how to inject the logger or template renderer into every controller.
 
 ## 🔌 Plug-and-Play Extensibility
 
-Stein's architecture makes it incredibly easy to add new capabilities. Want to add **PSR-6 Caching** or 
-**PSR-14 Event Dispatching**? You don't need to refactor your existing controllers.
+Adding a new capability (e.g., PSR-6 Caching, PSR-14 Event Dispatching) follows a simple three-step pattern:
 
-Just follow the Stein "Assembly" pattern:
+1. **Define your Provider:** Create a Service Provider that registers your service and hooks `afterResolve`.
+2. **Implement & Use:** Add the `AwareInterface` and `AwareTrait` to any class that needs the service.
 
-1. **Define your Provider:** Create a Service Provider that registers your new service (e.g., Redis Cache).
-2. **Add an Inflector:** Tell the container that any class implementing `CacheAwareInterface` should receive the Cache service.
-3. **Implement & Use:** Simply add the interface and trait to your class.
-
-**Example of adding a new "Part" to the monster:**
+**Example — wiring the logger into any `LoggerAwareInterface` class:**
 
 ```php
 class LoggingServiceProvider extends AbstractServiceProvider implements BootableServiceProviderInterface
 {
-
     public function boot(): void
     {
         $this
             ->getContainer()
-            ->inflector(
+            ->afterResolve(
                 LoggerAwareInterface::class,
                 fn (LoggerAwareInterface $class) => $class->setLogger(
                     $this->getContainer()->get(Logger::class)->withName(get_class($class))
-                ));
+                )
+            );
     }
-    
-    // ....
+
+    // register() binds LoggerInterface and Logger::class ...
 }
 ```
 
-Now, any controller or class in your application can become "Logger-Aware" just by tagging it with the
-interface. No constructor changes, no mess.
+Now any class implementing `LoggerAwareInterface` is automatically equipped with a logger named after the
+class itself — no constructor changes, no manual wiring.
 
 ## 🎨 Powerful Templating (via Mezzio)
 
-Stein doesn't force a template engine on you. Thanks to the **Mezzio Template** bridge, you can choose your
-favorite weapon:
+Stein doesn't force a template engine on you. Thanks to the **Mezzio Template** bridge, you can swap
+engines with a single `composer require`:
 
+- `composer require mezzio/mezzio-platesrenderer` ← included by default (Plates)
 - `composer require mezzio/mezzio-twigrenderer` (for Twig)
-- `composer require mezzio/mezzio-platesrenderer` (for Plates)
+- `composer require mezzio/mezzio-laminasviewrenderer` (for Laminas View)
 
-**Usage in Controller:**
+Just update `ViewServiceProvider` to bind the new renderer — nothing else changes.
+
+**Usage in a Controller:**
 
 ```php
 public function handle(ServerRequestInterface $request): ResponseInterface
 {
-    return $this->response()->view('profile', ['name' => 'Frankie']);
+    return new HtmlResponse($this->templateRenderer->render('profile', ['name' => 'Frankie']));
 }
 ```
 
-## 📂 Project Structure (DDD Inspired)
+Templates live in `storage/views/` and support layouts out of the box:
+
+```php
+// storage/views/home.php
+<?php $this->layout('layout', ['title' => 'Welcome']) ?>
+<h1>It's Alive!</h1>
+```
+
+## 📂 Project Structure
 
 ```text
-src/
-├── Application    # Controllers, Service Providers, Response Builders
-├── Domain         # The heart of your app (Entities, Repository Interfaces)
-└── Infrastructure # Database implementations, Third-party adapters
+.
+├── bootstrap/          # Global defines and helper functions (app_path, emit, ...)
+├── config/
+│   ├── container.php   # Container bootstrap — service providers & bindings
+│   ├── middlewares.php # Global middleware stack
+│   └── routes.php      # Route definitions
+├── public/
+│   ├── index.php       # FPM / dev server entry point
+│   └── worker.php      # FrankenPHP worker entry point
+├── src/
+│   ├── Application/    # Controllers, Service Providers, Use Cases
+│   ├── Domain/         # Entities, Repository Interfaces, Value Objects
+│   └── Infrastructure/ # Repository implementations, adapters
+├── storage/
+│   ├── cache/          # Route cache (production)
+│   ├── logs/
+│   └── views/          # Plates templates
+└── stubs/              # PHPStan & FrankenPHP function stubs
 ```
 
 ## 🛠️ Quick Start
 
 1. **Create your project:**
 
-```php
-composer create-project stein/stein monstruous-app
-cd monstruous-app
+```shell
+composer create-project stein/stein my-app
+cd my-app
 cp .env.example .env
 ```
 
-2. **Spin it up with Docker:**
+2. **Spin it up with Docker (FrankenPHP worker mode):**
 
 ```shell
-docker-compose up --build
-# or
 composer start
+# or
+docker compose up --build
 ```
 
-3. **Create a Routed Controller :**
+3. **Or run locally with the built-in PHP server:**
+
+```shell
+composer serve
+```
+
+4. **Create a Controller:**
 
 ```php
 namespace Application\Controller;
 
-use Application\Attributes\Route;
-use Psr\Http\Message\ResponseInterface;
+use Laminas\Diactoros\Response\JsonResponse;
+use Psr\Http\Message\{ResponseInterface, ServerRequestInterface};
 
-class HomeController extends Controller 
+class WelcomeController extends Controller
 {
-
-    #[Route('/welcome')] // GET method by default
-    public function handle(ServerRequestInterface $request): ResponseInterface 
+    public function handle(ServerRequestInterface $request): ResponseInterface
     {
-        return $this->response()->json(['message' => 'It is alive!']);
+        $this->logger->info('Welcome!');
+
+        return new JsonResponse(['message' => 'It is alive!']);
     }
 }
 ```
 
-> You still can add routes manually if needed (in `config/routes.php`):
-> 
-> ```php
-> $collector->addRoute('GET', '/users/{id:\d+}', UserController::class);
-> ```
+5. **Register its route in `config/routes.php`:**
 
+```php
+$router->map('GET', '/welcome', WelcomeController::class);
+```
 
-4. **Profit.**
-
-Stein automatically discovers your routes and wires them to the FastRoute dispatcher.
+6. **Profit.**
 
 ## 🧠 Why Stein?
 
 Because you want the control of a custom framework without the technical debt. By using only PSR-compliant
 bricks, you can swap any part of Stein at any time.
 
-**It’s not just a framework; it’s an assembly of excellence.**
+- Swap `laminas-diactoros` for any other PSR-7/17 implementation.
+- Swap `Plates` for `Twig` in one `composer require` + one service provider change.
+- Swap `Monolog` for any PSR-3 logger.
+- Add PSR-6 caching, PSR-14 events, or any other PSR service by following the Awareness pattern.
+
+**It's not just a framework; it's an assembly of excellence.**
 
 ## ⚖️ License
 

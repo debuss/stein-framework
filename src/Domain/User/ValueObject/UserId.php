@@ -24,7 +24,7 @@ readonly class UserId implements JsonSerializable
         return (string)$this->id;
     }
 
-    public function jsonSerialize(): int
+    public function jsonSerialize(): ?int
     {
         return $this->id;
     }

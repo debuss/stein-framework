@@ -3,11 +3,9 @@
 namespace Application\Controller;
 
 use Application\UseCase\User\{GetAllUsersCommand, GetAllUsersHandler, GetUserByIdCommand, GetUserByIdHandler};
-use JsonException;
+use Laminas\Diactoros\Response\JsonResponse;
 use Psr\Http\Message\{ResponseInterface, ServerRequestInterface};
-use Router\Attribute\{Get, Group};
 
-#[Group('/api/v1')]
 class UserController extends Controller
 {
 
@@ -16,10 +14,6 @@ class UserController extends Controller
         protected GetUserByIdHandler $handlerById
     ) {}
 
-    /**
-     * @throws JsonException
-     */
-    #[Get('/users[/{id:\d+}]')]
     public function handle(ServerRequestInterface $request): ResponseInterface
     {
         $id = $request->getAttribute('id');
@@ -28,6 +22,6 @@ class UserController extends Controller
             ? $this->handlerById->handle(new GetUserByIdCommand((int)$id))
             : $this->handlerAll->handle(new GetAllUsersCommand());
 
-        return $this->response()->json($users);
+        return new JsonResponse($users);
     }
 }

@@ -2,20 +2,13 @@
 
 namespace Domain\User\Exception;
 
-use ProblemDetails\{ProblemDetails, ProblemDetailsException};
+use RuntimeException;
 
-class UserNotFoundException extends ProblemDetailsException
+class UserNotFoundException extends RuntimeException
 {
 
     public static function create(int $id) : self
     {
-        $problem_details = new ProblemDetails(
-            'error://user-not-found',
-            'The requested user does not exist.',
-            404,
-            "The user with ID $id does not exist."
-        );
-
-        return new self($problem_details);
+        return new self("The user with ID $id does not exist.", 404);
     }
 }

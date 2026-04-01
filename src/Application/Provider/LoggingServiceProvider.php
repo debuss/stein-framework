@@ -5,6 +5,7 @@ namespace Application\Provider;
 use League\Container\ServiceProvider\{AbstractServiceProvider, BootableServiceProviderInterface};
 use Borsch\Config\Config;
 use DateTimeZone;
+use League\Container\Container;
 use Monolog\Handler\StreamHandler;
 use Monolog\{Formatter\JsonFormatter, Level, Logger};
 use Monolog\Processor\PsrLogMessageProcessor;
@@ -15,13 +16,15 @@ class LoggingServiceProvider extends AbstractServiceProvider implements Bootable
 
     public function boot(): void
     {
-        $this
-            ->getContainer()
-            ->inflector(
-                LoggerAwareInterface::class,
-                fn(LoggerAwareInterface $class) => $class->setLogger(
-                    $this->getContainer()->get(Logger::class)->withName(get_class($class))
-                ));
+        /** @var Container $container */
+        $container = $this->getContainer();
+
+        $container->afterResolve(
+            LoggerAwareInterface::class,
+            fn(LoggerAwareInterface $class) => $class->setLogger(
+                $this->getContainer()->get(Logger::class)->withName(get_class($class))
+            )
+        );
     }
 
     public function provides(string $id): bool
