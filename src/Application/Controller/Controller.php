@@ -2,36 +2,21 @@
 
 namespace Application\Controller;
 
-use Application\Builder\ResponseBuilder;
-use Awareness\{ResponseFactoryAwareInterface,
-    ResponseFactoryAwareTrait,
-    StreamFactoryAwareInterface,
-    StreamFactoryAwareTrait,
-    TemplateRendererAwareInterface,
-    TemplateRendererAwareTrait
-};
-use Psr\Log\{LoggerAwareInterface, LoggerAwareTrait};
+use Mezzio\Template\TemplateRendererInterface;
+use Awareness\{TemplateRendererAwareInterface, TemplateRendererAwareTrait};
+use Psr\Log\{LoggerAwareInterface, LoggerAwareTrait, LoggerInterface};
 use Psr\Http\Server\RequestHandlerInterface;
 
+/**
+ * @phpstan-property LoggerInterface $logger
+ * @phpstan-property TemplateRendererInterface $templateRenderer
+ */
 abstract class Controller implements
     LoggerAwareInterface,
-    ResponseFactoryAwareInterface,
-    StreamFactoryAwareInterface,
     TemplateRendererAwareInterface,
     RequestHandlerInterface
 {
 
     use LoggerAwareTrait,
-        ResponseFactoryAwareTrait,
-        StreamFactoryAwareTrait,
         TemplateRendererAwareTrait;
-
-    protected function response(): ResponseBuilder
-    {
-        return new ResponseBuilder(
-            $this->responseFactory,
-            $this->streamFactory,
-            $this->templateRenderer
-        );
-    }
 }

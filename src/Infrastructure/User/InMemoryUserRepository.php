@@ -6,6 +6,9 @@ use Domain\User\Exception\{UserIdInvalidException, UserNameInvalidException, Use
 use Domain\User\{User, UserRepositoryInterface};
 use Psr\Log\{LoggerAwareInterface, LoggerAwareTrait, LoggerInterface};
 
+/**
+ * @phpstan-property LoggerInterface $logger
+ */
 class InMemoryUserRepository implements UserRepositoryInterface, LoggerAwareInterface
 {
 

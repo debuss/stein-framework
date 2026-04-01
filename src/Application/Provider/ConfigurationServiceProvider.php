@@ -2,8 +2,7 @@
 
 namespace Application\Provider;
 
-use Borsch\Config\Aggregator;
-use Borsch\Config\Config;
+use Borsch\Config\{Aggregator, Config};
 use Borsch\Config\Reader\Ini;
 use League\Container\ServiceProvider\AbstractServiceProvider;
 
@@ -12,7 +11,7 @@ class ConfigurationServiceProvider extends AbstractServiceProvider
 
     public function provides(string $id): bool
     {
-        return $id == Config::class;
+        return $id === Config::class;
     }
 
     public function register(): void

@@ -2,20 +2,13 @@
 
 namespace Domain\User\Exception;
 
-use ProblemDetails\{ProblemDetails, ProblemDetailsException};
+use InvalidArgumentException;
 
-class UserNameInvalidException extends ProblemDetailsException
+class UserNameInvalidException extends InvalidArgumentException
 {
 
     public static function create() : self
     {
-        $problem_details = new ProblemDetails(
-            'error://user-name-invalid',
-            'User name cannot be empty.',
-            401,
-            "A user with an empty name is not possible."
-        );
-
-        return new self($problem_details);
+        return new self("A user with an empty name is not possible.", 422);
     }
 }

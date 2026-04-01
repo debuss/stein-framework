@@ -1,15 +1,18 @@
 <?php
 
-use FastRoute\RouteCollector;
-use Router\AttributeRouteLoader;
+use Application\Controller\{HomePageController, UserController};
+use Middlewares\JsonPayload;
+use League\Route\{RouteGroup, RouterInterface};
+use Psr\Container\ContainerInterface;
 
-return static function (RouteCollector $collector): void {
+return static function (RouterInterface $router, ContainerInterface $container): void {
 
-    $loader = new AttributeRouteLoader(
-        'Application\\Controller\\',
-        source_path('Application/Controller')
-    );
+    $router->map('GET', '/', HomePageController::class);
 
-    $loader->load($collector);
+    $router->group('/api/v1', function (RouteGroup $group) {
+
+        $group->map('GET', '/users[/{id:\d+}]', UserController::class);
+
+    })->lazyMiddlewares([JsonPayload::class]);
 
 };

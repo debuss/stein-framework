@@ -2,14 +2,15 @@
 
 namespace Application\Provider;
 
-use Awareness\ResponseFactoryAwareInterface;
-use Awareness\StreamFactoryAwareInterface;
-use Borsch\RequestHandler\{Emitter, EmitterInterface, RequestHandler};
-use League\Container\ServiceProvider\AbstractServiceProvider;
-use League\Container\ServiceProvider\BootableServiceProviderInterface;
-use Nyholm\Psr7\Factory\Psr17Factory;
-use Nyholm\Psr7Server\ServerRequestCreator;
-use Psr\Http\Server\RequestHandlerInterface;
+use League\Container\Container;
+use Awareness\{ResponseFactoryAwareInterface, StreamFactoryAwareInterface};
+use Laminas\Diactoros\{RequestFactory,
+    ResponseFactory,
+    ServerRequestFactory,
+    StreamFactory,
+    UploadedFileFactory,
+    UriFactory};
+use League\Container\ServiceProvider\{AbstractServiceProvider, BootableServiceProviderInterface};
 use Psr\Http\Message\{RequestFactoryInterface,
     ResponseFactoryInterface,
     ServerRequestFactoryInterface,
@@ -23,21 +24,22 @@ class HttpServiceProvider extends AbstractServiceProvider implements BootableSer
 
     public function boot(): void
     {
-        $this
-            ->getContainer()
-            ->inflector(
-                ResponseFactoryAwareInterface::class,
-                fn (ResponseFactoryAwareInterface $class) => $class->setResponseFactory(
-                    $this->getContainer()->get(ResponseFactoryInterface::class)
-                ));
+        /** @var Container $container */
+        $container = $this->getContainer();
 
-        $this
-            ->getContainer()
-            ->inflector(
-                StreamFactoryAwareInterface::class,
-                fn (StreamFactoryAwareInterface $class) => $class->setStreamFactory(
+        $container->afterResolve(
+            ResponseFactoryAwareInterface::class,
+            fn (ResponseFactoryAwareInterface $class) => $class->setResponseFactory(
+                $this->getContainer()->get(ResponseFactoryInterface::class)
+            )
+        );
+
+        $container->afterResolve(
+            StreamFactoryAwareInterface::class,
+            fn (StreamFactoryAwareInterface $class) => $class->setStreamFactory(
                 $this->getContainer()->get(StreamFactoryInterface::class)
-            ));
+            )
+        );
     }
 
     public function provides(string $id): bool
@@ -49,9 +51,7 @@ class HttpServiceProvider extends AbstractServiceProvider implements BootableSer
             StreamFactoryInterface::class,
             UploadedFileFactoryInterface::class,
             UriFactoryInterface::class,
-            ServerRequestInterface::class,
-            RequestHandlerInterface::class,
-            EmitterInterface::class
+            ServerRequestInterface::class
         ]);
     }
 
@@ -59,42 +59,46 @@ class HttpServiceProvider extends AbstractServiceProvider implements BootableSer
     {
         $this
             ->getContainer()
-            ->add(ServerRequestFactoryInterface::class, Psr17Factory::class);
+            ->add(ServerRequestFactoryInterface::class, ServerRequestFactory::class);
 
         $this
             ->getContainer()
-            ->add(ResponseFactoryInterface::class, Psr17Factory::class);
+            ->add(ResponseFactoryInterface::class, ResponseFactory::class);
 
         $this
             ->getContainer()
-            ->add(RequestFactoryInterface::class, Psr17Factory::class);
+            ->add(RequestFactoryInterface::class, RequestFactory::class);
 
         $this
             ->getContainer()
-            ->add(StreamFactoryInterface::class, Psr17Factory::class);
+            ->add(StreamFactoryInterface::class, StreamFactory::class);
 
         $this
             ->getContainer()
-            ->add(UploadedFileFactoryInterface::class, Psr17Factory::class);
+            ->add(UploadedFileFactoryInterface::class, UploadedFileFactory::class);
 
         $this
             ->getContainer()
-            ->add(UriFactoryInterface::class, Psr17Factory::class);
+            ->add(UriFactoryInterface::class, UriFactory::class);
 
         $this
             ->getContainer()
-            ->add(ServerRequestInterface::class, fn ($factory): ServerRequestInterface =>
-                (new ServerRequestCreator($factory, $factory, $factory, $factory))
-                    ->fromGlobals()
-            )
-            ->addArgument(new Psr17Factory());
+            ->add(ServerRequestInterface::class, function (): ServerRequestInterface {
+                $server_request = ServerRequestFactory::fromGlobals(
+                    $_SERVER,
+                    $_GET,
+                    $_POST,
+                    $_COOKIE,
+                    $_FILES
+                );
 
-        $this
-            ->getContainer()
-            ->add(RequestHandlerInterface::class, RequestHandler::class);
+                // Remove trailing slashes and spaces (without redirection)
+                $uri = $server_request->getUri();
+                if ($uri->getPath() !== '/') {
+                    $uri = $uri->withPath(rtrim($uri->getPath(), '/ '));
+                }
 
-        $this
-            ->getContainer()
-            ->add(EmitterInterface::class, Emitter::class);
+                return $server_request->withUri($uri);
+            });
     }
 }

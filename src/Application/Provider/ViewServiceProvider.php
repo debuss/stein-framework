@@ -2,7 +2,8 @@
 
 namespace Application\Provider;
 
-use Application\Controller\Controller;
+use Awareness\TemplateRendererAwareInterface;
+use League\Container\Container;
 use League\Container\ServiceProvider\AbstractServiceProvider;
 use League\Plates\{Engine};
 use League\Container\ServiceProvider\BootableServiceProviderInterface;
@@ -14,14 +15,15 @@ class ViewServiceProvider extends AbstractServiceProvider implements BootableSer
 
     public function boot(): void
     {
-        $this
-            ->getContainer()
-            ->inflector(
-                Controller::class,
-                fn (Controller $controller) => $controller->setTemplateRenderer(
-                    $this->getContainer()->get(TemplateRendererInterface::class)
-                )
-            );
+        /** @var Container $container */
+        $container = $this->getContainer();
+
+        $container->afterResolve(
+            TemplateRendererAwareInterface::class,
+            fn (TemplateRendererAwareInterface $controller) => $controller->setTemplateRenderer(
+                $this->getContainer()->get(TemplateRendererInterface::class)
+            )
+        );
     }
 
     public function provides(string $id): bool
