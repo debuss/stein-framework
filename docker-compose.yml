@@ -11,5 +11,12 @@ services:
     environment:
       SERVER_NAME: :80 # Force FrankenPHP to listen HTTP on port 80
       FRANKENPHP_CONFIG: worker ./public/worker.php
-    command: frankenphp php-server --watch --root ./public
+      # Application specific environment variables
+      APP_NAME: app
+      APP_VERSION: 1.0.0
+      APP_ENV: production
+      LOG_LEVEL: Warning
+      TIMEZONE: Europe/Paris
+      FRANKENPHP_NB_REQUEST_TO_RESTART: 1000
+    # command: frankenphp php-server --watch --root ./public # For development using FrankenPHP's built-in server with hot reload
     tty: true

@@ -19,9 +19,14 @@ class ConfigurationServiceProvider extends AbstractServiceProvider
         $this
             ->getContainer()
             ->add(Config::class, function (): Config {
-                $aggregator = new Aggregator([
-                    (new Ini())->fromFile(app_path('.env'))
-                ]);
+                $aggregator = new Aggregator(
+                    [
+                        $_ENV, // Placed first so ENV from server can be overwritten by configuration files
+                        (new Ini())->fromFile(app_path('.env'))
+                    ],
+                    cache_path('config.cache.php'),
+                    str_starts_with($_ENV['APP_ENV'] ?? 'development', 'prod')
+                );
 
                 return $aggregator->getMergedConfig();
             });
