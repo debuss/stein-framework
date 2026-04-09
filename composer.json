@@ -53,6 +53,9 @@
     }
   },
   "scripts": {
+    "post-create-project-cmd": [
+      "@php -r \"file_exists('.env') || copy('.env.example', '.env');\""
+    ],
     "serve": [
       "Composer\\Config::disableProcessTimeout",
       "php -S localhost:8080 -t ./public/ ./public/index.php"
