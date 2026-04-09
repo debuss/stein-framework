@@ -25,5 +25,5 @@ ENV SERVER_NAME=:80
 ENV FRANKENPHP_CONFIG="worker ./public/worker.php"
 
 EXPOSE 80
-#EXPOSE 443
-#EXPOSE 443/udp
+#EXPOSE 443 # Force FrankenPHP to listen HTTP on port 80
+#EXPOSE 443/udp # Force FrankenPHP to listen HTTP on port 80
