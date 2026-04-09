@@ -1,4 +1,4 @@
-FROM dunglas/frankenphp:1-php8.3-alpine
+FROM dunglas/frankenphp:php8.5-alpine
 
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
@@ -25,5 +25,5 @@ ENV SERVER_NAME=:80
 ENV FRANKENPHP_CONFIG="worker ./public/worker.php"
 
 EXPOSE 80
-#EXPOSE 443
-#EXPOSE 443/udp
+#EXPOSE 443 # Force FrankenPHP to listen HTTP on port 80
+#EXPOSE 443/udp # Force FrankenPHP to listen HTTP on port 80
