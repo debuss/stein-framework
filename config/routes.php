@@ -1,18 +1,22 @@
 <?php
 
-use Application\Controller\{HomePageController, UserController};
-use Middlewares\JsonPayload;
-use League\Route\{RouteGroup, RouterInterface};
+use League\Route\RouterInterface;
 use Psr\Container\ContainerInterface;
+use Routing\AttributeRouteLoader;
 
 return static function (RouterInterface $router, ContainerInterface $container): void {
 
-    $router->map('GET', '/', HomePageController::class);
+    $loader = new AttributeRouteLoader(
+        'Application\\Controller',
+        __DIR__ . '/../src/Application/Controller'
+    );
 
-    $router->group('/api/v1', function (RouteGroup $group) {
+    $routes = $loader->getRouteDefinitions();
+    foreach ($routes as $route) {
+        $router->map($route->methods, $route->path, $route->handler[0]);
+    }
 
-        $group->map('GET', '/users[/{id:\d+}]', UserController::class);
-
-    })->lazyMiddlewares([JsonPayload::class]);
+    // Still possible to define route manually, example :
+    //   $router->map('GET', '/my-path', MyPathController::class);
 
 };

@@ -1,6 +1,6 @@
 <?php
 
-use Middlewares\ErrorHandler;
+use Middlewares\{ErrorHandler, JsonPayload};
 use League\Route\{Router, RouterInterface};
 use Psr\Container\ContainerInterface;
 
@@ -13,7 +13,8 @@ return static function (RouterInterface $router, ContainerInterface $container):
 
     /** @var Router $router */
     $router->lazyMiddlewares([
-        ErrorHandler::class
+        ErrorHandler::class,
+        JsonPayload::class
     ]);
 
 };

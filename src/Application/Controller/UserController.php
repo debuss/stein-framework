@@ -5,7 +5,10 @@ namespace Application\Controller;
 use Application\UseCase\User\{GetAllUsersCommand, GetAllUsersHandler, GetUserByIdCommand, GetUserByIdHandler};
 use Laminas\Diactoros\Response\JsonResponse;
 use Psr\Http\Message\{ResponseInterface, ServerRequestInterface};
+use Routing\Attribute\ApiController;
+use Routing\Attribute\HttpGet;
 
+#[ApiController('/api/v1')]
 class UserController extends Controller
 {
 
@@ -14,6 +17,7 @@ class UserController extends Controller
         protected GetUserByIdHandler $handlerById
     ) {}
 
+    #[HttpGet('/users[/{id:\d+}]')]
     public function handle(ServerRequestInterface $request): ResponseInterface
     {
         $id = $request->getAttribute('id');
